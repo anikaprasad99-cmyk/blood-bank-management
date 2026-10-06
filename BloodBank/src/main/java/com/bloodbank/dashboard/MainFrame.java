@@ -5,6 +5,7 @@ import com.bloodbank.auth.InMemoryUserRepository;
 import com.bloodbank.auth.LoginPanel;
 import com.bloodbank.auth.User;
 import com.bloodbank.common.Role;
+import org.yourcompany.yourproject.donation.DonationHistoryUI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -42,17 +43,19 @@ public class MainFrame extends JFrame {
         // Add login screen
         mainPanel.add(loginPanel, "LOGIN");
 
-        // Add temporary screens
+        // Add inventory screen
         mainPanel.add(
                 new PlaceholderPanel("Inventory — Coming Soon"),
                 "INVENTORY"
         );
 
+        // Add donation history screen
         mainPanel.add(
-                new PlaceholderPanel("Donations — Coming Soon"),
+                new DonationHistoryUI(),
                 "DONATIONS"
         );
 
+        // Add blood request screen
         mainPanel.add(
                 new PlaceholderPanel("Blood Request — Coming Soon"),
                 "REQUESTS"
