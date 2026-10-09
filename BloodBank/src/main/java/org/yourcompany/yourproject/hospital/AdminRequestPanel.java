@@ -1,64 +1,45 @@
 package org.yourcompany.yourproject.hospital;
 
+import com.bloodbank.dashboard.DashboardTheme;
+import com.bloodbank.dashboard.MainFrame;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 
-public class AdminRequestPanel extends JFrame {
+public class AdminRequestPanel extends JPanel {
 
     private HospitalRequestRepository repository;
     private DefaultTableModel tableModel;
     private JTable requestTable;
+    private final MainFrame mainFrame;
 
-    public AdminRequestPanel() {
+    public AdminRequestPanel(MainFrame mainFrame) {
+        this.mainFrame = mainFrame;
 
-        // Use the SAME repository as the Hospital side
-        repository = HospitalRequestRepositoryProvider.getRepository();
+        repository =
+                HospitalRequestRepositoryProvider.getRepository();
 
-        setTitle("Admin Side - Blood Bank Management System");
-        setSize(900, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(10, 10));
 
-        JLabel title = new JLabel("Admin Dashboard");
-
+        JPanel titleBar = new JPanel(new BorderLayout());
+        titleBar.setOpaque(false);
+        JLabel title = new JLabel("Admin - Hospital Requests");
         title.setFont(new Font("Arial", Font.BOLD, 24));
         title.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JPanel alertPanel = new JPanel();
-        alertPanel.setLayout(
-                new BoxLayout(alertPanel, BoxLayout.Y_AXIS)
-        );
+        JButton backButton = DashboardTheme.createSecondaryButton("Back");
+        backButton.addActionListener(e -> mainFrame.goBackToDashboard());
 
-        JLabel alertTitle =
-                new JLabel("LOW STOCK ALERT");
-
-        alertTitle.setFont(
-                new Font("Arial", Font.BOLD, 16)
-        );
-
-        JLabel alertMessage =
-                new JLabel("O+ : 2 units remaining");
-
-        alertPanel.add(alertTitle);
-        alertPanel.add(alertMessage);
-
-        JPanel topPanel = new JPanel();
-
-        topPanel.setLayout(
-                new BoxLayout(topPanel, BoxLayout.Y_AXIS)
-        );
-
-        topPanel.add(title);
-        topPanel.add(alertPanel);
-
-        add(topPanel, BorderLayout.NORTH);
+        titleBar.add(title, BorderLayout.CENTER);
+        titleBar.add(backButton, BorderLayout.EAST);
+        add(titleBar, BorderLayout.NORTH);
 
         String[] columns = {
                 "ID",
                 "Hospital",
-                "Patient",
                 "Blood Group",
+                "Component",
                 "Units",
                 "Urgency",
                 "Status"
@@ -78,108 +59,35 @@ public class AdminRequestPanel extends JFrame {
         JButton approveButton =
                 new JButton("Approve Request");
 
-        approveButton.addActionListener(e -> {
-
-            int selectedRow =
-                    requestTable.getSelectedRow();
-
-            if (selectedRow == -1) {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Please select a request first."
-                );
-
-                return;
-            }
-
-
-            String requestId =
-                    (String) tableModel.getValueAt(
-                            selectedRow,
-                            0
-                    );
-
-
-            HospitalRequest request =
-                    repository.findById(requestId);
-
-
-            if (request != null) {
-
-                request.setStatus("Approved");
-
-                repository.update(request);
-
-                tableModel.setValueAt(
-                        "Approved",
-                        selectedRow,
-                        6
-                );
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Request approved successfully."
-                );
-            }
-        });
+        approveButton.addActionListener(e ->
+                updateSelectedRequest("APPROVED")
+        );
 
         JButton rejectButton =
                 new JButton("Reject Request");
 
-        rejectButton.addActionListener(e -> {
+        rejectButton.addActionListener(e ->
+                updateSelectedRequest("REJECTED")
+        );
 
-            int selectedRow =
-                    requestTable.getSelectedRow();
+        JButton refreshButton =
+                new JButton("Refresh");
 
-            if (selectedRow == -1) {
+        refreshButton.addActionListener(e ->
+                loadRequests()
+        );
 
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Please select a request first."
-                );
-
-                return;
-            }
-
-
-            String requestId =
-                    (String) tableModel.getValueAt(
-                            selectedRow,
-                            0
-                    );
-
-
-            HospitalRequest request =
-                    repository.findById(requestId);
-
-
-            if (request != null) {
-
-                request.setStatus("Rejected");
-
-                repository.update(request);
-
-                tableModel.setValueAt(
-                        "Rejected",
-                        selectedRow,
-                        6
-                );
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Request rejected."
-                );
-            }
-        });
-
-        JPanel buttonPanel = new JPanel();
+        JPanel buttonPanel =
+                new JPanel();
 
         buttonPanel.add(approveButton);
         buttonPanel.add(rejectButton);
+        buttonPanel.add(refreshButton);
 
         JPanel centerPanel =
-                new JPanel(new BorderLayout(20, 20));
+                new JPanel(
+                        new BorderLayout(20, 20)
+                );
 
         centerPanel.setBorder(
                 BorderFactory.createEmptyBorder(
@@ -205,6 +113,8 @@ public class AdminRequestPanel extends JFrame {
                 BorderLayout.CENTER
         );
     }
+
+
     private void loadRequests() {
 
         tableModel.setRowCount(0);
@@ -216,8 +126,8 @@ public class AdminRequestPanel extends JFrame {
                     new Object[]{
                             request.getRequestId(),
                             request.getHospitalName(),
-                            request.getPatientName(),
                             request.getBloodGroup(),
+                            request.getComponent(),
                             request.getUnitsRequired(),
                             request.getUrgency(),
                             request.getStatus()
@@ -226,9 +136,52 @@ public class AdminRequestPanel extends JFrame {
         }
     }
 
-    public static void main(String[] args) {
 
-        new AdminRequestPanel().setVisible(true);
+    private void updateSelectedRequest(String newStatus) {
 
+        int selectedRow =
+                requestTable.getSelectedRow();
+
+        if (selectedRow == -1) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select a request first."
+            );
+
+            return;
+        }
+
+        int requestId =
+                (int) tableModel.getValueAt(
+                        selectedRow,
+                        0
+                );
+
+        HospitalRequest request =
+                repository.findById(requestId);
+
+        if (request == null) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Request not found."
+            );
+
+            return;
+        }
+
+        request.setStatus(newStatus);
+
+        repository.update(request);
+
+        loadRequests();
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Request " +
+                newStatus.toLowerCase() +
+                " successfully."
+        );
     }
 }
